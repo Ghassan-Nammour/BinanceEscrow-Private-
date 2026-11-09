@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Private Escrow</title>
+<title>Binance Private Escrow</title>
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><g fill="%23F0B90B"><polygon points="20,1 26,7 20,13 14,7"/><polygon points="7,14 13,20 7,26 1,20"/><polygon points="33,14 39,20 33,26 27,20"/><polygon points="20,27 26,33 20,39 14,33"/><polygon points="7,3.5 10.5,7 7,10.5 3.5,7"/><polygon points="33,3.5 36.5,7 33,10.5 29.5,7"/><polygon points="7,29.5 10.5,33 7,36.5 3.5,33"/><polygon points="33,29.5 36.5,33 33,36.5 29.5,33"/><polygon points="20,14 26,20 20,26 14,20"/></g></svg>'>
 <style>
   :root{
     --bg:#0b0e11; --card:#131a21; --card2:#18222b; --line:#24313d;
@@ -19,10 +20,12 @@
     font-size:14px;line-height:1.5;
   }
   .wrap{max-width:700px;margin:0 auto;border:1px solid var(--line);border-radius:14px;overflow:hidden}
-  .hd{padding:18px 20px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(240,185,11,.07),transparent)}
-  .brand{font-weight:800;letter-spacing:.14em;font-size:13px;color:var(--acc);display:flex;align-items:center;gap:8px}
-  .brand i{width:9px;height:9px;background:var(--acc);border-radius:2px;transform:rotate(45deg);display:inline-block}
-  .sub{color:var(--mut);font-size:12px;margin-top:5px}
+  .hd{padding:18px 20px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(240,185,11,.09),transparent)}
+  .brand{display:flex;align-items:center;gap:11px}
+  .logo{width:27px;height:27px;flex:0 0 auto;fill:var(--acc);display:block}
+  .ttl{font-size:17px;font-weight:800;letter-spacing:-.015em;line-height:1.2}
+  .ttl b{color:var(--acc);font-weight:800}
+  .sub{color:var(--mut);font-size:12px;margin-top:7px}
   .tabs{display:flex;gap:2px;padding:10px 12px 0;border-bottom:1px solid var(--line);background:var(--card)}
   .tabs button{flex:1;background:none;border:0;border-bottom:2px solid transparent;color:var(--mut);
     padding:9px 6px;font-size:12.5px;font-weight:600;cursor:pointer;border-radius:6px 6px 0 0;font-family:inherit}
@@ -115,7 +118,20 @@
 <div class="wrap" id="app">
 
 <div class="hd">
-  <div class="brand"><i></i>PRIVATE ESCROW</div>
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 40 40" aria-label="Binance" role="img">
+      <polygon points="20,1 26,7 20,13 14,7"/>
+      <polygon points="7,14 13,20 7,26 1,20"/>
+      <polygon points="33,14 39,20 33,26 27,20"/>
+      <polygon points="20,27 26,33 20,39 14,33"/>
+      <polygon points="7,3.5 10.5,7 7,10.5 3.5,7"/>
+      <polygon points="33,3.5 36.5,7 33,10.5 29.5,7"/>
+      <polygon points="7,29.5 10.5,33 7,36.5 3.5,33"/>
+      <polygon points="33,29.5 36.5,33 33,36.5 29.5,33"/>
+      <polygon points="20,14 26,20 20,26 14,20"/>
+    </svg>
+    <div class="ttl"><b>Binance</b> Private escrow</div>
+  </div>
   <div class="sub">No signup · no accounts · no server. Deal data lives in your browser and inside the link.</div>
 </div>
 
