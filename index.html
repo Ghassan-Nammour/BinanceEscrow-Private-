@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Private Escrow</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<style>
+  :root{
+    --bg:#0b0e11; --card:#131a21; --card2:#18222b; --line:#24313d;
+    --txt:#e7eef5; --mut:#8c9dad; --acc:#f0b90b;
+    --ok:#2ecc71; --bad:#e74c3c; --warn:#f39c12;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;padding:24px 14px;background:var(--bg);color:var(--txt);
+    font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:14px;line-height:1.5;
+  }
+  .wrap{max-width:700px;margin:0 auto;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .hd{padding:18px 20px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(240,185,11,.07),transparent)}
+  .brand{font-weight:800;letter-spacing:.14em;font-size:13px;color:var(--acc);display:flex;align-items:center;gap:8px}
+  .brand i{width:9px;height:9px;background:var(--acc);border-radius:2px;transform:rotate(45deg);display:inline-block}
+  .sub{color:var(--mut);font-size:12px;margin-top:5px}
+  .tabs{display:flex;gap:2px;padding:10px 12px 0;border-bottom:1px solid var(--line);background:var(--card)}
+  .tabs button{flex:1;background:none;border:0;border-bottom:2px solid transparent;color:var(--mut);
+    padding:9px 6px;font-size:12.5px;font-weight:600;cursor:pointer;border-radius:6px 6px 0 0;font-family:inherit}
+  .tabs button.on{color:var(--acc);border-bottom-color:var(--acc);background:rgba(240,185,11,.06)}
+  .tabs button:hover{color:var(--txt)}
+  .pane{display:none;padding:18px 20px 22px}
+  .pane.on{display:block}
+  .fld{margin-bottom:14px}
+  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin-bottom:6px;font-weight:700}
+  input,select,textarea{width:100%;padding:10px 12px;background:var(--card2);border:1px solid var(--line);
+    border-radius:8px;color:var(--txt);font-family:inherit;font-size:13.5px;outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--acc)}
+  textarea{resize:vertical;min-height:82px}
+  .row{display:flex;gap:10px}
+  .row>*{flex:1;min-width:0}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 16px;
+    background:var(--acc);color:#0b0e11;border:0;border-radius:8px;font-weight:800;font-size:13px;
+    cursor:pointer;font-family:inherit;transition:.15s}
+  .btn:hover{filter:brightness(1.1)}
+  .btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line);font-weight:600}
+  .btn.ghost:hover{border-color:var(--acc);color:var(--acc)}
+  .btn.sm{padding:7px 11px;font-size:11.5px}
+  .btn.full{width:100%}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .note{font-size:11.5px;color:var(--mut);margin-top:7px}
+  .hint{font-size:11.5px;color:var(--warn);margin-top:6px;display:none}
+  .hint.on{display:block}
+  .wallet{display:flex;gap:9px;align-items:flex-start;padding:11px;border:1px solid var(--line);
+    border-radius:9px;margin-bottom:9px;background:var(--card)}
+  .wallet .tag{min-width:74px;flex:0 0 74px}
+  .wallet .tag b{display:block;font-size:12.5px;color:var(--acc)}
+  .wallet .tag span{font-size:10px;color:var(--mut)}
+  .wallet .body{flex:1;min-width:0}
+  .wallet input{font-size:11.5px;font-family:ui-monospace,Menlo,monospace;padding:8px 10px}
+  .wallet .st{font-size:10px;margin-top:4px;color:var(--mut)}
+  .wallet .st.ok{color:var(--ok)}
+  .wallet .st.bad{color:var(--bad)}
+  .deal{border:1px solid var(--line);border-radius:11px;background:var(--card);overflow:hidden}
+  .deal .top{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;
+    justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .deal .id{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--acc);font-weight:700}
+  .deal .amt{font-size:20px;font-weight:800;letter-spacing:-.01em}
+  .deal .body{padding:16px}
+  .pill{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;
+    padding:4px 9px;border-radius:20px;border:1px solid}
+  .pill.created{color:var(--acc);border-color:var(--acc);background:rgba(240,185,11,.1)}
+  .pill.funded{color:#5dade2;border-color:#5dade2;background:rgba(93,173,226,.1)}
+  .pill.released{color:var(--ok);border-color:var(--ok);background:rgba(46,204,113,.1)}
+  .pill.refunded{color:var(--warn);border-color:var(--warn);background:rgba(243,156,18,.1)}
+  .pill.disputed{color:var(--bad);border-color:var(--bad);background:rgba(231,76,60,.1)}
+  .pill.expired{color:var(--mut);border-color:var(--line);background:var(--card2)}
+  .addrbox{background:var(--card2);border:1px dashed var(--line);border-radius:10px;
+    padding:12px;text-align:center;margin:12px 0}
+  .finger{font-family:ui-monospace,Menlo,monospace;font-size:13px;font-weight:800;letter-spacing:.05em}
+  .finger em{color:var(--acc);font-style:normal}
+  .addr{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--mut);word-break:break-all;margin:8px 0}
+  #qr{display:flex;justify-content:center;margin:10px 0 2px}
+  #qr img,#qr canvas{border-radius:8px;background:#fff;padding:6px}
+  .kv{display:grid;grid-template-columns:96px 1fr;gap:5px 12px;font-size:12.5px;margin-bottom:12px}
+  .kv dt{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding-top:2px}
+  .kv dd{margin:0;word-break:break-word}
+  .terms{background:var(--card2);border-left:2px solid var(--acc);padding:10px 12px;
+    border-radius:0 8px 8px 0;font-size:12.5px;white-space:pre-wrap;margin-bottom:14px}
+  .cd{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--warn)}
+  .cd.over{color:var(--bad)}
+  .acts{display:flex;gap:7px;flex-wrap:wrap;padding:14px 16px;border-top:1px solid var(--line);background:var(--card2)}
+  .log{list-style:none;padding:12px 0 0;margin:12px 0 0;font-size:11.5px;border-top:1px solid var(--line)}
+  .log li{display:flex;gap:9px;padding:4px 0;color:var(--mut)}
+  .log li b{color:var(--txt);font-weight:700;min-width:66px;text-transform:uppercase;font-size:10px;letter-spacing:.05em;padding-top:2px}
+  .log li time{font-family:ui-monospace,Menlo,monospace;font-size:10px;margin-left:auto;white-space:nowrap}
+  .empty{text-align:center;color:var(--mut);padding:34px 16px;font-size:12.5px}
+  .empty b{display:block;color:var(--txt);margin-bottom:5px;font-size:14px}
+  .list{list-style:none;padding:0;margin:0}
+  .list li{border:1px solid var(--line);border-radius:9px;margin-bottom:8px;background:var(--card)}
+  .list a{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 13px;
+    text-decoration:none;color:var(--txt);cursor:pointer}
+  .list a:hover{border-color:var(--acc)}
+  .list .l{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--acc)}
+  .list .r{font-size:12px;font-weight:700}
+  .foot{padding:12px 20px;border-top:1px solid var(--line);font-size:10.5px;color:var(--mut);background:var(--card);line-height:1.6}
+  .foot b{color:var(--warn)}
+  .bar{display:flex;gap:8px;margin-bottom:14px}
+  .copyrow{display:flex;gap:7px;margin-top:8px}
+  .copyrow .btn{flex:1}
+  .toast{margin:0 0 12px;padding:9px 12px;border-radius:8px;background:rgba(46,204,113,.14);
+    border:1px solid #2ecc71;font-size:12px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+
+<div class="hd">
+  <div class="brand"><i></i>PRIVATE ESCROW</div>
+  <div class="sub">No signup · no accounts · no server. Deal data lives in your browser and inside the link.</div>
+</div>
+
+<div class="tabs">
+  <button data-tab="new" class="on">New deal</button>
+  <button data-tab="deals">Deals</button>
+  <button data-tab="wallets">Payout wallets</button>
+</div>
+
+<div class="pane on" id="pane-new">
+  <div class="fld">
+    <label>Asset &amp; network</label>
+    <select id="coin"></select>
+    <div class="hint" id="coinHint"></div>
+  </div>
+  <div class="row">
+    <div class="fld"><label>Amount</label><input id="amount" inputmode="decimal" placeholder="0.00"></div>
+    <div class="fld" style="flex:0 0 118px"><label>Fee %</label><input id="fee" inputmode="decimal" value="0" placeholder="0"></div>
+  </div>
+  <div class="row">
+    <div class="fld"><label>Depositor (payer)</label><input id="depositor" placeholder="Name, handle or Binance ID"></div>
+    <div class="fld"><label>Beneficiary (payee)</label><input id="beneficiary" placeholder="Name, handle or Binance ID"></div>
+  </div>
+  <div class="fld">
+    <label>Terms &amp; release conditions</label>
+    <textarea id="terms" placeholder="What is being bought or delivered, and exactly when funds are released or refunded."></textarea>
+  </div>
+  <div class="fld">
+    <label>Expiry</label>
+    <select id="expiry">
+      <option value="24">24 hours</option>
+      <option value="72" selected>3 days</option>
+      <option value="168">7 days</option>
+      <option value="336">14 days</option>
+      <option value="720">30 days</option>
+    </select>
+  </div>
+  <button class="btn full" id="create">Create escrow deal</button>
+  <div class="note">Only assets with a saved payout address appear in the list. <a href="#" id="goWallets" style="color:var(--acc)">Set up wallets</a>.</div>
+</div>
+
+<div class="pane" id="pane-deals">
+  <div class="bar">
+    <button class="btn ghost sm" id="importBtn">Import from link / file</button>
+    <button class="btn ghost sm" id="exportAll">Export backup</button>
+  </div>
+  <div id="dealList"></div>
+  <input type="file" id="fileIn" accept=".json,application/json" hidden>
+</div>
+
+<div class="pane" id="pane-wallets">
+  <div class="note" style="margin:0 0 14px">Paste the receiving address for each asset. Saved locally, never transmitted. Only filled slots are offered when creating a deal.</div>
+  <div id="walletList"></div>
+  <button class="btn full" id="saveWallets">Save addresses</button>
+  <div class="note">Validation is format-only — always double-check the first and last characters before publishing.</div>
+</div>
+
+<div class="pane" id="pane-view"></div>
+
+<div class="foot">
+  <b>Semi-custodial.</b> No smart contract: funds go straight to the payout wallet and release is executed manually by the escrow agent. The link is the only credential — anyone holding it can read the deal. Confirm addresses out-of-band before sending.
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  /* ====== payout addresses — edit here or via the Payout wallets tab ====== */
+  var DEFAULT_WALLETS = {
+    btc:     "bc1qffp02xc0jw2kht48jjttgwna7pux22ldxt2wcl",
+    eth:     "0x3aa2cE139f011503AdBbcE55835BA57ef6B7C66E",
+    usdttrc: "TREHwswrSTapsoQhA2cRPHBkj6KvQW3zu6",
+    usdterc: "0xBEba3d7743aE62302C837743fe8BF7856CC179d9",
+    bnb:     "0xBEba3d7743aE62302C837743fe8BF7856CC179d9",
+    sol:     "F9PZDLgYGvu5c1rDrU6wb456byRPgXpNK9jq8Ex2Zqc6",
+    xrp:     "rB2apSnwRNwSf8misjUzk16y93MSJYWFeB",
+    doge:    "D9Fhstpjj2cRFJfvuLwvSTTxtWWVhpesSe",
+    ltc:     "ltc1qfkfn8uqvnm8gnzm4mr0cuth2a529s030nhpjed"
+  };
+
+  var COINS = [
+    {id:"btc",     sym:"BTC",  net:"Bitcoin",    ex:"https://mempool.space/address/",             re:/^(bc1[a-z0-9]{25,62}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})$/},
+    {id:"eth",     sym:"ETH",  net:"ERC-20",     ex:"https://etherscan.io/address/",              re:/^0x[a-fA-F0-9]{40}$/},
+    {id:"usdttrc", sym:"USDT", net:"TRC-20",     ex:"https://tronscan.org/#/address/",            re:/^T[1-9A-HJ-NP-Za-km-z]{33}$/},
+    {id:"usdterc", sym:"USDT", net:"ERC-20",     ex:"https://etherscan.io/address/",              re:/^0x[a-fA-F0-9]{40}$/},
+    {id:"bnb",     sym:"BNB",  net:"BEP-20",     ex:"https://bscscan.com/address/",               re:/^0x[a-fA-F0-9]{40}$/},
+    {id:"sol",     sym:"SOL",  net:"Solana",     ex:"https://solscan.io/account/",                re:/^[1-9A-HJ-NP-Za-km-z]{32,44}$/},
+    {id:"xrp",     sym:"XRP",  net:"XRP Ledger", ex:"https://xrpscan.com/account/",               re:/^r[1-9A-HJ-NP-Za-km-z]{24,34}$/},
+    {id:"doge",    sym:"DOGE", net:"Dogecoin",   ex:"https://blockchair.com/dogecoin/address/",   re:/^[DA9][1-9A-HJ-NP-Za-km-z]{33}$/},
+    {id:"ltc",     sym:"LTC",  net:"Litecoin",   ex:"https://blockstream.info/litecoin/address/", re:/^(ltc1[a-z0-9]{25,62}|[LM3][a-km-zA-HJ-NP-Z1-9]{25,34})$/}
+  ];
+
+  var LS_W = "escrow.wallets.v1", LS_D = "escrow.deals.v1";
+  var $ = function(s){ return document.querySelector(s); };
+  var esc = function(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  }); };
+  var coin = function(id){ for (var i=0;i<COINS.length;i++) if (COINS[i].id===id) return COINS[i]; return null; };
+
+  function loadWallets(){
+    var out = {}, saved = {};
+    try { saved = JSON.parse(localStorage.getItem(LS_W) || "{}") || {}; } catch(e){}
+    COINS.forEach(function(c){
+      var v = (saved[c.id] !== undefined) ? saved[c.id] : DEFAULT_WALLETS[c.id];
+      out[c.id] = (v || "").trim();
+    });
+    return out;
+  }
+  function saveWallets(w){ try{ localStorage.setItem(LS_W, JSON.stringify(w)); }catch(e){} }
+  function loadDeals(){ try { var a = JSON.parse(localStorage.getItem(LS_D) || "[]"); return Array.isArray(a)?a:[]; } catch(e){ return []; } }
+  function saveDeals(d){ try{ localStorage.setItem(LS_D, JSON.stringify(d)); }catch(e){} }
+  function getDeal(id){ return loadDeals().filter(function(d){ return d.id === id; })[0] || null; }
+  function putDeal(d){
+    var a = loadDeals(), i = -1;
+    for (var k=0;k<a.length;k++) if (a[k].id === d.id) i = k;
+    if (i >= 0) a[i] = d; else a.unshift(d);
+    saveDeals(a);
+  }
+  function b64e(obj){
+    var bytes = new TextEncoder().encode(JSON.stringify(obj)), bin = "";
+    for (var i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  }
+  function b64d(str){
+    var p = str.replace(/-/g,"+").replace(/_/g,"/");
+    while (p.length % 4) p += "=";
+    var bin = atob(p), bytes = new Uint8Array(bin.length);
+    for (var i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+  function newId(){
+    var A = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ", s = "";
+    for (var i=0;i<10;i++) s += A[Math.floor(Math.random()*A.length)];
+    return "ESC-" + s.slice(0,5) + "-" + s.slice(5);
+  }
+  function baseUrl(){ return location.href.split("#")[0]; }
+  function dealLink(d){ return baseUrl() + "#d=" + b64e(d); }
+  function money(n){ return (Number(n) || 0).toLocaleString(undefined, {maximumFractionDigits: 8}); }
+  function when(ts){
+    var d = new Date(ts);
+    return d.toLocaleDateString(undefined,{month:"short",day:"numeric"}) + " " +
+           d.toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"});
+  }
+  function toast(msg){
+    var t = document.createElement("div");
+    t.className = "toast"; t.textContent = msg;
+    var p = $(".pane.on");
+    if (p) p.insertBefore(t, p.firstChild);
+    setTimeout(function(){ t.remove(); }, 2600);
+  }
+  function copy(text, label){
+    function done(){ toast((label || "Copied") + " to clipboard"); }
+    if (navigator.clipboard && window.isSecureContext){
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else fallback();
+    function fallback(){
+      var ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); done(); } catch(e){}
+      ta.remove();
+    }
+  }
+
+  function tab(name){
+    document.querySelectorAll(".tabs button").forEach(function(b){
+      b.classList.toggle("on", b.dataset.tab === name);
+    });
+    document.querySelectorAll(".pane").forEach(function(p){
+      p.classList.toggle("on", p.id === "pane-" + name);
+    });
+  }
+  document.querySelectorAll(".tabs button").forEach(function(b){
+    b.addEventListener("click", function(){ tab(b.dataset.tab); if (b.dataset.tab === "deals") renderDeals(); });
+  });
+  $("#goWallets").addEventListener("click", function(e){ e.preventDefault(); tab("wallets"); });
+
+  function renderWallets(){
+    var w = loadWallets(), box = $("#walletList");
+    box.innerHTML = "";
+    COINS.forEach(function(c){
+      var row = document.createElement("div");
+      row.className = "wallet";
+      row.innerHTML =
+        '<div class="tag"><b>' + c.sym + '</b><span>' + esc(c.net) + '</span></div>' +
+        '<div class="body"><input data-id="' + c.id + '" placeholder="' + esc(c.sym + " " + c.net + " address") + '" value="' + esc(w[c.id]) + '" spellcheck="false">' +
+        '<div class="st" data-st="' + c.id + '"></div></div>';
+      box.appendChild(row);
+      var input = row.querySelector("input");
+      function check(){
+        var v = input.value.trim(), st = row.querySelector(".st");
+        if (!v){ st.className = "st"; st.textContent = "empty — slot disabled"; return; }
+        if (c.re.test(v)){ st.className = "st ok"; st.textContent = "Format looks valid"; }
+        else { st.className = "st bad"; st.textContent = "Does not look like a valid " + c.net + " address"; }
+      }
+      input.addEventListener("input", check);
+      check();
+    });
+  }
+  $("#saveWallets").addEventListener("click", function(){
+    var w = {};
+    document.querySelectorAll("#walletList input").forEach(function(i){ w[i.dataset.id] = i.value.trim(); });
+    saveWallets(w); renderCoinOptions(); toast("Payout addresses saved");
+  });
+
+  function renderCoinOptions(){
+    var w = loadWallets(), sel = $("#coin"), prev = sel.value;
+    sel.innerHTML = "";
+    var usable = COINS.filter(function(c){ return w[c.id]; });
+    if (!usable.length){
+      sel.innerHTML = '<option value="">— no payout addresses saved —</option>';
+      $("#create").disabled = true;
+      return;
+    }
+    $("#create").disabled = false;
+    usable.forEach(function(c){
+      var o = document.createElement("option");
+      o.value = c.id; o.textContent = c.sym + " · " + c.net;
+      sel.appendChild(o);
+    });
+    if (prev && usable.some(function(c){ return c.id === prev; })) sel.value = prev;
+    updateHint();
+  }
+  function updateHint(){
+    var c = coin($("#coin").value), h = $("#coinHint");
+    if (!c){ h.className = "hint"; return; }
+    var w = loadWallets()[c.id];
+    h.className = "hint on";
+    h.textContent = "Sending to " + c.sym + " on " + c.net + " only: " + w.slice(0,10) + "…" + w.slice(-6);
+  }
+  $("#coin").addEventListener("change", updateHint);
+
+  $("#create").addEventListener("click", function(){
+    var c = coin($("#coin").value);
+    if (!c) return;
+    var amount = parseFloat($("#amount").value);
+    if (!(amount > 0)){ $("#amount").focus(); toast("Enter an amount greater than 0"); return; }
+    var feePct = Math.max(0, Math.min(10, parseFloat($("#fee").value) || 0));
+    var hours = parseInt($("#expiry").value, 10) || 72;
+    var now = Date.now();
+    var deal = {
+      v: 1, id: newId(), coin: c.id, sym: c.sym, net: c.net,
+      address: loadWallets()[c.id],
+      amount: amount, feePct: feePct,
+      depositor: $("#depositor").value.trim() || "Depositor",
+      beneficiary: $("#beneficiary").value.trim() || "Beneficiary",
+      terms: $("#terms").value.trim() || "No terms specified.",
+      createdAt: now, expiresAt: now + hours * 3600000,
+      status: "created", txid: "",
+      log: [{ t: now, s: "created", note: "Deal created" }]
+    };
+    putDeal(deal);
+    $("#amount").value = ""; $("#terms").value = "";
+    renderView(deal.id);
+  });
+
+  var FLOW = {
+    created:  [["funded","Mark funded"],["refunded","Refund / cancel"]],
+    funded:   [["released","Release funds"],["refunded","Refund"],["disputed","Mark disputed"]],
+    disputed: [["released","Release funds"],["refunded","Refund"]],
+    released: [],
+    refunded: [],
+    expired:  [["funded","Mark funded"],["refunded","Refund / cancel"]]
+  };
+  function setStatus(id, s){
+    var d = getDeal(id);
+    if (!d) return;
+    var note = "";
+    if (s === "funded" || s === "released"){
+      var tx = prompt(s === "funded" ? "Paste the funding transaction hash (optional):" : "Paste the payout transaction hash (optional):", d.txid || "");
+      if (tx === null) return;
+      d.txid = tx.trim();
+      note = tx.trim() ? "tx " + tx.trim() : "no tx hash recorded";
+    }
+    d.status = s;
+    d.log.push({ t: Date.now(), s: s, note: note });
+    putDeal(d);
+    renderView(id);
+  }
+  function effectiveStatus(d){
+    if ((d.status === "created" || d.status === "funded") && Date.now() > d.expiresAt) return "expired";
+    return d.status;
+  }
+
+  function renderView(id){
+    var d = getDeal(id), pane = $("#pane-view");
+    if (!d){ pane.innerHTML = '<div class="empty"><b>Deal not found</b>It may live in another browser or was cleared.</div>'; tab("view"); return; }
+    var st = effectiveStatus(d);
+    var fee = d.amount * (d.feePct || 0) / 100;
+    var total = d.amount + fee;
+    var acts = (FLOW[st] || []).map(function(a){
+      return '<button class="btn sm ghost" data-set="' + a[0] + '">' + a[1] + '</button>';
+    }).join("");
+
+    pane.innerHTML =
+      '<div class="deal">' +
+        '<div class="top">' +
+          '<div><div class="id">' + esc(d.id) + '</div>' +
+          '<div class="amt" style="margin-top:4px">' + money(d.amount) + ' ' + esc(d.sym) + '</div>' +
+          '<div class="note" style="margin:2px 0 0">' + esc(d.net) + '</div></div>' +
+          '<span class="pill ' + st + '">' + st + '</span>' +
+        '</div>' +
+        '<div class="body">' +
+          '<dl class="kv">' +
+            '<dt>Depositor</dt><dd>' + esc(d.depositor) + '</dd>' +
+            '<dt>Beneficiary</dt><dd>' + esc(d.beneficiary) + '</dd>' +
+            '<dt>Fee</dt><dd>' + (d.feePct || 0) + '% = ' + money(fee) + ' ' + esc(d.sym) + '</dd>' +
+            '<dt>Total due</dt><dd><strong>' + money(total) + ' ' + esc(d.sym) + '</strong></dd>' +
+            '<dt>Expires</dt><dd><span class="cd" id="cd">…</span><br><span class="note">' + when(d.expiresAt) + '</span></dd>' +
+          '</dl>' +
+          '<div class="terms">' + esc(d.terms) + '</div>' +
+          '<label>Deposit address · ' + esc(d.sym) + ' on ' + esc(d.net) + '</label>' +
+          '<div class="addrbox">' +
+            '<div id="qr"></div>' +
+            '<div class="finger"><em>' + esc(d.address.slice(0,4)) + '</em> ' + esc(d.address.slice(4,-4)) + ' <em>' + esc(d.address.slice(-4)) + '</em></div>' +
+            '<div class="copyrow">' +
+              '<button class="btn ghost sm" id="copyAddr">Copy address</button>' +
+              '<a class="btn ghost sm" href="' + esc(coin(d.coin).ex + d.address) + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none">Explorer</a>' +
+            '</div>' +
+            '<div class="note">Confirm the highlighted characters out-of-band before sending.</div>' +
+          '</div>' +
+          (d.txid ? '<div class="note">Tx hash: <span style="font-family:ui-monospace,monospace;word-break:break-all;color:var(--txt)">' + esc(d.txid) + '</span></div>' : '') +
+          '<ul class="log">' + d.log.map(function(l){
+            return '<li><b>' + esc(l.s) + '</b><span>' + esc(l.note) + '</span><time>' + when(l.t) + '</time></li>';
+          }).join("") + '</ul>' +
+        '</div>' +
+        '<div class="acts">' +
+          '<button class="btn sm" id="copyLink">Copy deal link</button>' +
+          '<button class="btn sm ghost" id="copyJson">Copy JSON</button>' +
+          (acts || '<span class="note" style="align-self:center">Closed — no further actions</span>') +
+          '<button class="btn sm ghost" id="backBtn" style="margin-left:auto">Back</button>' +
+        '</div>' +
+      '</div>';
+
+    tab("view");
+    var qr = $("#qr");
+    if (typeof QRCode !== "undefined"){
+      qr.innerHTML = "";
+      new QRCode(qr, { text: d.address, width: 150, height: 150, correctLevel: QRCode.CorrectLevel.M });
+    }
+    $("#copyAddr").addEventListener("click", function(){ copy(d.address, "Address"); });
+    $("#copyLink").addEventListener("click", function(){ copy(dealLink(d), "Deal link"); });
+    $("#copyJson").addEventListener("click", function(){ copy(JSON.stringify(d, null, 2), "JSON"); });
+    $("#backBtn").addEventListener("click", function(){ tab("deals"); renderDeals(); });
+    pane.querySelectorAll("[data-set]").forEach(function(b){
+      b.addEventListener("click", function(){ setStatus(d.id, b.dataset.set); });
+    });
+    var timer = setInterval(function(){
+      var el = document.getElementById("cd");
+      if (!el){ clearInterval(timer); return; }
+      var left = d.expiresAt - Date.now();
+      if (left <= 0){ el.textContent = "expired"; el.classList.add("over"); clearInterval(timer); return; }
+      var h = Math.floor(left / 3600000), m = Math.floor(left % 3600000 / 60000), s = Math.floor(left % 60000 / 1000);
+      el.textContent = (h ? h + "h " : "") + m + "m " + String(s).padStart(2,"0") + "s";
+    }, 1000);
+  }
+
+  function renderDeals(){
+    var box = $("#dealList"), all = loadDeals();
+    if (!all.length){
+      box.innerHTML = '<div class="empty"><b>No deals yet</b>Create one, or open a link someone sent you.</div>';
+      return;
+    }
+    box.innerHTML = '<ul class="list">' + all.map(function(d){
+      var st = effectiveStatus(d);
+      return '<li><a data-open="' + esc(d.id) + '"><span><span class="l">' + esc(d.id) + '</span><br>' +
+        '<span class="note">' + esc(d.depositor) + ' → ' + esc(d.beneficiary) + '</span></span>' +
+        '<span style="text-align:right"><span class="r">' + money(d.amount) + ' ' + esc(d.sym) + '</span><br>' +
+        '<span class="pill ' + st + '" style="font-size:9px">' + st + '</span></span></a></li>';
+    }).join("") + '</ul>';
+    box.querySelectorAll("[data-open]").forEach(function(a){
+      a.addEventListener("click", function(){ renderView(a.dataset.open); });
+    });
+  }
+
+  function ingest(raw){
+    var obj = null;
+    try {
+      if (/^[A-Za-z0-9_-]{20,}$/.test(raw.trim())) obj = b64d(raw.trim());
+      else if (raw.indexOf("d=") > -1) obj = b64d(raw.split("d=")[1].split("&")[0]);
+      else obj = JSON.parse(raw);
+    } catch(e){ toast("Could not read that deal"); return; }
+    if (!obj || !obj.id || !obj.address){ toast("Invalid deal payload"); return; }
+    if (getDeal(obj.id) && !confirm("Deal " + obj.id + " already exists here. Overwrite with the imported copy?")) { renderView(obj.id); return; }
+    if (!obj.log) obj.log = [{ t: Date.now(), s: obj.status || "created", note: "Imported" }];
+    putDeal(obj);
+    renderView(obj.id);
+    toast("Deal imported");
+  }
+
+  $("#importBtn").addEventListener("click", function(){
+    var raw = prompt("Paste a deal link or JSON payload:");
+    if (raw && raw.trim()) ingest(raw.trim());
+  });
+  $("#fileIn").addEventListener("change", function(e){
+    var f = e.target.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function(){ ingest(String(r.result)); };
+    r.readAsText(f);
+    e.target.value = "";
+  });
+  $("#exportAll").addEventListener("click", function(){
+    var blob = new Blob([JSON.stringify({ exportedAt: Date.now(), deals: loadDeals() }, null, 2)], {type:"application/json"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "escrow-backup-" + new Date().toISOString().slice(0,10) + ".json";
+    a.click(); URL.revokeObjectURL(a.href);
+    toast("Backup downloaded");
+  });
+
+  function boot(){
+    renderWallets();
+    renderCoinOptions();
+    if (location.hash.indexOf("d=") > -1) ingest(location.hash);
+    else renderDeals();
+  }
+  window.addEventListener("hashchange", function(){
+    if (location.hash.indexOf("d=") > -1) ingest(location.hash);
+  });
+  boot();
+})();
+</script>
+</body>
+</html>
